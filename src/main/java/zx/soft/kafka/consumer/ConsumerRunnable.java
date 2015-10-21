@@ -1,5 +1,7 @@
 package zx.soft.kafka.consumer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import kafka.consumer.ConsumerIterator;
@@ -31,7 +33,9 @@ public class ConsumerRunnable implements Runnable {
 	@Override
 	public void run() {
 		ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
+		List<byte[]> messages = new ArrayList<>();
 		while (it.hasNext()) {
+			messages.add(it.next().message());
 			this.handler.handleMessage(it.next().message());
 			count.incrementAndGet();
 		}

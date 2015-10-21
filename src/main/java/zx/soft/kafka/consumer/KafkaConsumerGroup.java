@@ -76,7 +76,7 @@ public class KafkaConsumerGroup {
 		Properties props = new Properties();
 		props.put("zookeeper.connect", kafka.getProperty("zookeeper"));
 		props.put("group.id", kafka.getProperty("group_id"));
-		props.put("zookeeper.session.timeout.ms", "1000");
+		props.put("zookeeper.session.timeout.ms", "60000");
 		props.put("zookeeper.sync.time.ms", "2000");
 		props.put("auto.commit.interval.ms", "1000");
 		return new ConsumerConfig(props);
