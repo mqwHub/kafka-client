@@ -19,6 +19,7 @@ public class Configs {
 		logger.info("Load resource: kafka.properties");
 		try (InputStream in = ConfigUtil.class.getClassLoader().getResourceAsStream("kafka.properties");) {
 			props.load(in);
+			logger.info("kafka properties : " + props.toString());
 		} catch (Exception e) {
 			logger.error("Exception:{}", LogbackUtil.expection2Str(e));
 			throw new RuntimeException(e);

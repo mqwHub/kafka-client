@@ -18,7 +18,7 @@ public class ConsumerGroupExample {
 
 			@Override
 			public void handleMessage(byte[] message) {
-				logger.info("Thread " + this.hashCode() + ": " + new String(message));
+				logger.info("Thread " + Thread.currentThread().getName() + ": " + new String(message));
 			}
 		});
 	}
