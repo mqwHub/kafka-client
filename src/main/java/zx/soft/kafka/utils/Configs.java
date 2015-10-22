@@ -26,8 +26,8 @@ public class Configs {
 
 	}
 
-	public static Properties getProps() {
-		return props;
+	public static String getProps(String prop) {
+		return props.getProperty(prop);
 	}
 
 }
