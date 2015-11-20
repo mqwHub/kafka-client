@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,11 +30,13 @@ public class KafkaConsumerGroup {
 	private final String topic;
 	private ExecutorService executor;
 	private AtomicLong count;
+	private ConcurrentHashMap<ByteWrapper, byte[]> resultMap;
 
 	public KafkaConsumerGroup(String a_topic) {
 		consumer = kafka.consumer.Consumer.createJavaConsumerConnector(createConsumerConfig());
 		this.topic = a_topic;
 		this.count = new AtomicLong();
+		resultMap = new ConcurrentHashMap<ByteWrapper, byte[]>();
 	}
 
 	public void shutdown() {
@@ -59,7 +62,7 @@ public class KafkaConsumerGroup {
 		executor = Executors.newFixedThreadPool(a_numThreads);
 
 		for (final KafkaStream<byte[], byte[]> stream : streams) {
-			executor.submit(new ConsumerRunnable(stream, count, handler));
+			executor.submit(new ConsumerRunnable(stream, count, handler, resultMap));
 		}
 		while (true) {
 			logger.info("pull " + this.count.get() + " Records");
