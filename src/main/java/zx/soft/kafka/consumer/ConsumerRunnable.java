@@ -26,6 +26,8 @@ public class ConsumerRunnable implements Runnable {
 	
 	private ConcurrentHashMap<ByteWrapper, byte[]> _resultmap;
 	
+	private Object object;
+	
 	// 从低位到高位
 	private static byte[] remarkOfEndStream = new byte[] {100, 101, 103, 104, 105};
 	
@@ -34,18 +36,19 @@ public class ConsumerRunnable implements Runnable {
 
 	public ConsumerRunnable() {}
 	
-	public ConsumerRunnable(KafkaStream<byte[], byte[]> a_stream, AtomicLong count, MessageHandler handler, ConcurrentHashMap<ByteWrapper, byte[]> map) {
+	public ConsumerRunnable(KafkaStream<byte[], byte[]> a_stream, AtomicLong count, MessageHandler handler, ConcurrentHashMap<ByteWrapper, byte[]> map, Object obj) {
 		m_stream = a_stream;
 		this.count = count;
 		this.handler = handler;
 		this._resultmap = map;
+		this.object  = obj;
 	}
 
 	@Override
 	public void run() {
 		ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
 		while (it.hasNext()) {
-			synchronized(this) {
+			synchronized(object) {
 				byte[] receivedMsg = it.next().message();
 				ByteWrapper key = new ByteWrapper(getFileRemarkkey(receivedMsg, lenOfPlaceholder));
 				byte[] current = getCucurrentValue(receivedMsg, lenOfPlaceholder);

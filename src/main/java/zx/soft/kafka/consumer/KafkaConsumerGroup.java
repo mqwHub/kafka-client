@@ -31,6 +31,7 @@ public class KafkaConsumerGroup {
 	private ExecutorService executor;
 	private AtomicLong count;
 	private ConcurrentHashMap<ByteWrapper, byte[]> resultMap;
+	private Object lock = new Object();
 
 	public KafkaConsumerGroup(String a_topic) {
 		consumer = kafka.consumer.Consumer.createJavaConsumerConnector(createConsumerConfig());
@@ -62,7 +63,7 @@ public class KafkaConsumerGroup {
 		executor = Executors.newFixedThreadPool(a_numThreads);
 
 		for (final KafkaStream<byte[], byte[]> stream : streams) {
-			executor.submit(new ConsumerRunnable(stream, count, handler, resultMap));
+			executor.submit(new ConsumerRunnable(stream, count, handler, resultMap, lock));
 		}
 		while (true) {
 			logger.info("pull " + this.count.get() + " Records");
