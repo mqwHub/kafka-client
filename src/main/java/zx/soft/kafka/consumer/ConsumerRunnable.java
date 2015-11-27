@@ -49,24 +49,34 @@ public class ConsumerRunnable implements Runnable {
 		ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
 		while (it.hasNext()) {
 			synchronized(object) {
-				byte[] receivedMsg = it.next().message();
-				ByteWrapper key = new ByteWrapper(getFileRemarkkey(receivedMsg, lenOfPlaceholder));
-				byte[] current = getCucurrentValue(receivedMsg, lenOfPlaceholder);
-				if (_resultmap.get(key) != null) {
-					byte[] result = combineTwobytes(_resultmap.get(key), current);
-					_resultmap.put(key, result);
-				} else {
-					_resultmap.put(key, current);
-				}
-				if (isMatchEndRemark(receivedMsg, remarkOfEndStream, lenOfPlaceholder)) {
-					writeToBigData(_resultmap.get(key));
-					_resultmap.remove(key);
-				}
-				this.handler.handleMessage(receivedMsg);
-				count.incrementAndGet();				
+				writeToBigDataAfter(it);			
 			}
 		}
 		logger.info("Shutting down Thread: " + this.hashCode());
+	}
+
+	private void writeToBigDataAfter(ConsumerIterator<byte[], byte[]> it) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@SuppressWarnings("unused")
+	private void writeToBigTableBefore(ConsumerIterator<byte[], byte[]> it) {
+		byte[] receivedMsg = it.next().message();
+		ByteWrapper key = new ByteWrapper(getFileRemarkkey(receivedMsg, lenOfPlaceholder));
+		byte[] current = getCucurrentValue(receivedMsg, lenOfPlaceholder);
+		if (_resultmap.get(key) != null) {
+			byte[] result = combineTwobytes(_resultmap.get(key), current);
+			_resultmap.put(key, result);
+		} else {
+			_resultmap.put(key, current);
+		}
+		if (isMatchEndRemark(receivedMsg, remarkOfEndStream, lenOfPlaceholder)) {
+			writeToBigData(_resultmap.get(key));
+			_resultmap.remove(key);
+		}
+		this.handler.handleMessage(receivedMsg);
+		count.incrementAndGet();	
 	}
 
 	private boolean isMatchEndRemark(byte[] receivedMsg, byte[] bytes, int length) {

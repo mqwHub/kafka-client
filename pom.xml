@@ -39,6 +39,24 @@
             <artifactId>commons-lang</artifactId> 
             <version>2.6</version>  
         </dependency>
+        
+        <!-- HBase -->
+        <dependency>
+			<groupId>org.apache.hbase</groupId>
+			<artifactId>hbase-client</artifactId>
+			<version>0.98.16-hadoop2</version>
+		</dependency>
+<dependency>
+	<groupId>org.apache.hbase</groupId>
+	<artifactId>hbase-common</artifactId>
+	<version>0.98.16-hadoop2</version>
+</dependency>
+<dependency>
+	<groupId>org.apache.hbase</groupId>
+	<artifactId>hbase-server</artifactId>
+	<version>0.98.16-hadoop2</version>
+</dependency>
+
         <!-- 
 		<dependency>
 			<groupId>zx.soft</groupId>
