@@ -6,7 +6,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
+import zx.soft.kafka.hbase.HbaseClient;
+import zx.soft.kafka.utils.ConvertUtil;
 
+import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,16 +51,43 @@ public class ConsumerRunnable implements Runnable {
 	public void run() {
 		ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
 		while (it.hasNext()) {
-			synchronized(object) {
+//			synchronized(object) {
 				writeToBigDataAfter(it);			
-			}
+//			}
 		}
 		logger.info("Shutting down Thread: " + this.hashCode());
 	}
 
 	private void writeToBigDataAfter(ConsumerIterator<byte[], byte[]> it) {
-		// TODO Auto-generated method stub
-		
+		byte[] receivedMsg = it.next().message();
+		try {
+			HbaseClient.put("kafka_db", convertToRowkey(receivedMsg), 
+					"load", "content", convertToContent(receivedMsg));
+		} catch (Exception e) {
+			logger.error("write to hbase error : ", e);
+		}
+	}
+
+	private byte[] convertToContent(byte[] receivedMsg) {
+		byte[] load = new byte[receivedMsg.length - 24];
+		System.arraycopy(receivedMsg, 24, load, 0, receivedMsg.length - 24);
+		return load;
+	}
+
+	private String convertToRowkey(byte[] receivedMsg) {
+		StringBuilder sb = new StringBuilder();
+		byte[] buffer = new byte[2];
+		byte[] order = new byte[4];
+		for (int i = 0; i < 20; i++) {
+			buffer[i % 2] = receivedMsg[i];
+			if (i % 2 == 1) {
+				sb.append(Hex.encodeHexString(buffer));
+			}
+		}
+		// 文件的顺序位置标示
+		System.arraycopy(receivedMsg, 20, order, 0, 4);
+		sb.append('|').append(ConvertUtil.fromByteArray(order));
+		return sb.toString();
 	}
 
 	@SuppressWarnings("unused")
@@ -115,16 +145,13 @@ public class ConsumerRunnable implements Runnable {
 
 	public static void main(String[] args) {
 		ConsumerRunnable r = new ConsumerRunnable();
-		byte[] receivedMsg = new byte[] {0x12, 0x13, 0x14, 0x15, 0x16, 0x17};
-		byte[] result = r.getFileRemarkkey(receivedMsg, 3);
-		byte[] r1 = r.getCucurrentValue(receivedMsg, 4);
-		System.out.println(result.length);
-		for (byte b : result) {
-			System.out.println(b);
-		}
-		System.out.println(r1.length);
-		for (byte b : r1) {
-			System.out.println(b);
-		}
+		byte[] receivedMsg = new byte[] {0x20, 0x01, 0x0d, (byte) 0xb8, (byte) 0x85, (byte) 0xa3, 0x08, (byte) 0xd3,
+				0x13, 0x19, (byte) 0x8a, 0x2e, 0x03, 0x70, 0x73, 0x44,
+				0x00, 0x00, 0x00, 0x01,
+				(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
+		long before = System.currentTimeMillis();
+		System.out.println(r.convertToRowkey(receivedMsg));
+		long after = System.currentTimeMillis();
+		System.out.println(after - before);
 	}
 }

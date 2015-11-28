@@ -17,7 +17,6 @@ public class HbaseClient {
 
 	static Configuration cfg = HBaseConfiguration.create();
 
-	// 新建表
 	public static void create(String tablename, String columnFamily) throws Exception {
 		HBaseAdmin admin = new HBaseAdmin(cfg);
 		if (admin.tableExists(tablename)) {
@@ -32,7 +31,6 @@ public class HbaseClient {
 
 	}
 
-	// 删除表
 	public static boolean delete(String tableName) throws Exception {
 		HBaseAdmin admin = new HBaseAdmin(cfg);
 		if (admin.tableExists(tableName)) {
@@ -48,7 +46,6 @@ public class HbaseClient {
 		return true;
 	}
 
-	// 添加一条数据
 	public static void put(String tableName, String row, String columnFamily, String column, String data)
 			throws Exception {
 		HTable table = new HTable(cfg, tableName);
@@ -57,7 +54,6 @@ public class HbaseClient {
 		table.put(p1);
 	}
 
-	// 添加一条数据
 	public static void put(String tableName, String row, String columnFamily, String column, byte[] data)
 			throws Exception {
 		HTable table = new HTable(cfg, tableName);
