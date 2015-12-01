@@ -10,7 +10,7 @@ public class ConsumerGroupExample {
 	private static Logger logger = LoggerFactory.getLogger(ConsumerGroupExample.class);
 
 	public static void main(String[] args) {
-		String topic = "sentiment-cache";
+		String topic = "apt-cache";
 		int threads = 3;
 
 		KafkaConsumerGroup example = new KafkaConsumerGroup(topic);
@@ -18,7 +18,7 @@ public class ConsumerGroupExample {
 
 			@Override
 			public void handleMessage(byte[] message) {
-				logger.info("Thread " + Thread.currentThread().getName() + ": " + new String(message));
+//				logger.info("Thread " + Thread.currentThread().getName() + ": " + new String(message));
 			}
 		});
 	}

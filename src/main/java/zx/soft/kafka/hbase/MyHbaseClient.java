@@ -12,9 +12,15 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class HbaseClient {
+import zx.soft.kafka.consumer.ConsumerRunnable;
 
+public class MyHbaseClient {
+
+	private static Logger logger = LoggerFactory.getLogger(MyHbaseClient.class);
+	
 	static Configuration cfg = HBaseConfiguration.create();
 
 	public static void create(String tablename, String columnFamily) throws Exception {
@@ -60,6 +66,7 @@ public class HbaseClient {
 		Put p1 = new Put(Bytes.toBytes(row));
 		p1.add(Bytes.toBytes(columnFamily), Bytes.toBytes(column), data);
 		table.put(p1);
+		logger.info("put '" + row + "','" + columnFamily + ":" + column + "','" + new String(data) + "'");
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -72,9 +79,9 @@ public class HbaseClient {
 		String tablename = "testdb";
 		String columnFamily = "cf";
 		try {
-			HbaseClient.delete(tablename);
-			HbaseClient.create(tablename, columnFamily);
-			HbaseClient.put(tablename, "row1", columnFamily, "cl1", b);
+			MyHbaseClient.delete(tablename);
+			MyHbaseClient.create(tablename, columnFamily);
+			MyHbaseClient.put(tablename, "row1", columnFamily, "cl1", b);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

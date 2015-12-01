@@ -1,17 +1,20 @@
 package zx.soft.kafka.consumer;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import kafka.consumer.ConsumerIterator;
-import kafka.consumer.KafkaStream;
-import zx.soft.kafka.hbase.HbaseClient;
-import zx.soft.kafka.utils.ConvertUtil;
-
 import org.apache.commons.codec.binary.Hex;
+import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import kafka.consumer.ConsumerIterator;
+import kafka.consumer.KafkaStream;
+import zx.soft.kafka.hbase.HBaseConfig;
+import zx.soft.kafka.hbase.HBaseTable;
+import zx.soft.kafka.utils.ConvertUtil;
 
 /**
  *
@@ -20,7 +23,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ConsumerRunnable implements Runnable {
 
-	private static Logger logger = LoggerFactory.getLogger(ConsumerRunnable.class);
+	private static Logger logger = LoggerFactory.getLogger("KAFKA_LOG");
 
 	private KafkaStream<byte[], byte[]> m_stream;
 
@@ -31,11 +34,17 @@ public class ConsumerRunnable implements Runnable {
 	
 	private Object object;
 	
+	private int batchSize = 1000;
+	
+	private int msgCount = 0;
+	
 	// 从低位到高位
 	private static byte[] remarkOfEndStream = new byte[] {100, 101, 103, 104, 105};
 	
 	// PCAP文件标示
 	private static int lenOfPlaceholder = 2;
+	
+	private HBaseTable table;
 
 	public ConsumerRunnable() {}
 	
@@ -45,6 +54,12 @@ public class ConsumerRunnable implements Runnable {
 		this.handler = handler;
 		this._resultmap = map;
 		this.object  = obj;
+		
+		try {
+			this.table = new HBaseTable(HConnectionManager.createConnection(HBaseConfig.getZookeeperConf()), "kafka_db");
+		} catch (IOException e) {
+			logger.error("initial failed");
+		}
 	}
 
 	@Override
@@ -52,25 +67,41 @@ public class ConsumerRunnable implements Runnable {
 		ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
 		while (it.hasNext()) {
 //			synchronized(object) {
-				writeToBigDataAfter(it);			
+				writeToBigDataAfter(it);
 //			}
 		}
 		logger.info("Shutting down Thread: " + this.hashCode());
 	}
 
 	private void writeToBigDataAfter(ConsumerIterator<byte[], byte[]> it) {
+		++msgCount;
 		byte[] receivedMsg = it.next().message();
+		this.handler.handleMessage(receivedMsg);
+		count.incrementAndGet();
 		try {
-			HbaseClient.put("kafka_db", convertToRowkey(receivedMsg), 
-					"load", "content", convertToContent(receivedMsg));
+			table.put(convertToRowkey(receivedMsg),
+					"load", convertToOrder(receivedMsg), convertToContent(receivedMsg));
+			table.execute();
 		} catch (Exception e) {
 			logger.error("write to hbase error : ", e);
 		}
 	}
 
+	private String convertToOrder(byte[] receivedMsg) {
+		byte[] order = new byte[4];
+		System.arraycopy(receivedMsg, 24, order, 0, 4);
+		int result = ConvertUtil.fromByteArray(order);
+		return Integer.toString(result);
+	}
+
+	private void printed(byte[] receivedMsg) {
+		System.out.println(convertToRowkey(receivedMsg));
+	}
+
+	// 16 + 8 + 4 = 28
 	private byte[] convertToContent(byte[] receivedMsg) {
-		byte[] load = new byte[receivedMsg.length - 24];
-		System.arraycopy(receivedMsg, 24, load, 0, receivedMsg.length - 24);
+		byte[] load = new byte[receivedMsg.length - 28];
+		System.arraycopy(receivedMsg, 28, load, 0, receivedMsg.length - 28);
 		return load;
 	}
 
@@ -78,15 +109,22 @@ public class ConsumerRunnable implements Runnable {
 		StringBuilder sb = new StringBuilder();
 		byte[] buffer = new byte[2];
 		byte[] order = new byte[4];
-		for (int i = 0; i < 20; i++) {
+		byte[] count = new byte[4];
+		for (int i = 0; i < 24; i++) {
 			buffer[i % 2] = receivedMsg[i];
 			if (i % 2 == 1) {
 				sb.append(Hex.encodeHexString(buffer));
 			}
 		}
 		// 文件的顺序位置标示
-		System.arraycopy(receivedMsg, 20, order, 0, 4);
-		sb.append('|').append(ConvertUtil.fromByteArray(order));
+//		System.arraycopy(receivedMsg, 24, order, 0, 4);
+//		int ordered = ConvertUtil.fromByteArray(order);
+//		if (ordered == -1) {
+//			System.arraycopy(receivedMsg, 28, count, 0, 4);
+//			sb.append('|').append(ordered).append('|').append(ConvertUtil.fromByteArray(count));			
+//		} else {
+//			sb.append('|').append(ordered);
+//		}
 		return sb.toString();
 	}
 
